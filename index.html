@@ -38,7 +38,6 @@
         #timer {
             font-size: 20px;
         }
-        /* Collapsible Button Styles */
         .collapsible {
             background-color: #007BFF;
             color: white;
@@ -49,7 +48,7 @@
             outline: none;
             font-size: 18px;
             width: 200px;
-            margin: 20px auto; /* Centering the button */
+            margin: 20px auto;
             border-radius: 15px;
             box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
             transition: background-color 0.3s ease;
@@ -144,7 +143,7 @@
         }
 
         // Timer functionality
-        let startTime, timerInterval;
+        let startTime, timerInterval, timerStarted = false;
 
         function startTimer() {
             startTime = Date.now();
@@ -158,7 +157,49 @@
             clearInterval(timerInterval);
             const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
             document.getElementById("final-time").textContent = finalTime;
+            return finalTime;
         }
+
+        // Leaderboard logic
+        let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+
+        function updateLeaderboard(finalTime) {
+            leaderboard.push(finalTime);
+            leaderboard.sort((a, b) => a - b);
+            leaderboard = leaderboard.slice(0, 5); // Keep only top 5 scores
+            localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+            displayLeaderboard();
+        }
+
+        function displayLeaderboard() {
+            const leaderboardList = document.getElementById("leaderboard");
+            leaderboardList.innerHTML = "";
+            leaderboard.forEach((time, index) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${index + 1}. ${time} seconds`;
+                leaderboardList.appendChild(listItem);
+            });
+        }
+
+        // Event listener for the collapsible button
+        const collapsible = document.querySelector(".collapsible");
+        const collapsibleContent = document.querySelector(".collapsible-content");
+
+        collapsible.addEventListener("click", function() {
+            this.classList.toggle("active");
+            const content = this.nextElementSibling;
+
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+                // Start the timer when the data is shown for the first time
+                if (!timerStarted) {
+                    startTimer();
+                    timerStarted = true;
+                }
+            }
+        });
 
         // Check if the form input matches the random data
         function checkFormInput() {
@@ -179,116 +220,42 @@
         document.getElementById("submit-btn").addEventListener("click", function() {
             // Check if input is correct
             if (checkFormInput()) {
-                stopTimer();
+                const finalTime = stopTimer();
                 document.getElementById("form-container").style.display = "none";
                 document.getElementById("result").style.display = "block";
-            } else {
-                alert("The input doesn't match the random data. Try again.");
-            }
 
-            // Reset the form fields regardless of correct or incorrect
-            document.getElementById("weather-form").reset();
+                // Update the leaderboard
+                updateLeaderboard(finalTime);
+            } else {
+                alert("Incorrect data! Please try again.");
+            }
         });
 
         // Event listener for retry button
         document.getElementById("retry-btn").addEventListener("click", function() {
-            document.getElementById("form-container").style.display = "block";
-            document.getElementById("result").style.display = "none";
-            generateRandomData();
-            startTimer();
+            location.reload(); // Reload the page to reset everything
         });
 
-        // Collapsible logic
-        const collapsible = document.querySelector(".collapsible");
-        const collapsibleContent = document.querySelector(".collapsible-content");
-
-        collapsible.addEventListener("click", function() {
-            this.classList.toggle("active");
-            const content = this.nextElementSibling;
-            if (content.style.display === "block") {
-                content.style.display = "none";
-            } else {
-                content.style.display = "block";
-            }
+        // Event listener to reset leaderboard
+        document.getElementById("reset-leaderboard-btn").addEventListener("click", function() {
+            localStorage.removeItem("leaderboard");
+            leaderboard = [];
+            displayLeaderboard();
         });
 
-        // Close collapsible when the form is focused
+        // Hide collapsible content when inputs are focused
         const formInputs = document.querySelectorAll("#weather-form input, #weather-form select");
         formInputs.forEach(input => {
             input.addEventListener("focus", () => {
-                collapsibleContent.style.display = "none"; // Close the collapsible when user clicks into the form
+                collapsibleContent.style.display = "none";
             });
         });
 
-        // Function to update the leaderboard
-        function updateLeaderboard(finalTime) {
-            const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
-
-            // Add the new score to the leaderboard
-            leaderboard.push(parseFloat(finalTime));
-
-            // Sort the leaderboard and keep only the top 5 scores
-            leaderboard.sort((a, b) => a - b);
-            if (leaderboard.length > 5) {
-                leaderboard.pop();
-            }
-
-            // Store the updated leaderboard in localStorage
-            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-
-            // Display the updated leaderboard
-            displayLeaderboard();
-        }
-
-        // Function to display the leaderboard
-        function displayLeaderboard() {
-            const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
-            const leaderboardElement = document.getElementById('leaderboard');
-
-            // Clear the existing leaderboard entries
-            leaderboardElement.innerHTML = '';
-
-            // Add the new leaderboard entries
-            leaderboard.forEach((score, index) => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `#${index + 1}: ${score.toFixed(1)} seconds`;
-                leaderboardElement.appendChild(listItem);
-            });
-        }
-
-        // Call this function when the user finishes the task successfully
-        function stopTimer() {
-            clearInterval(timerInterval);
-            const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-            document.getElementById("final-time").textContent = finalTime;
-
-            // Update the leaderboard with the final time
-            updateLeaderboard(finalTime);
-        }
-
-        // Initialize the leaderboard when the page loads
-        document.addEventListener("DOMContentLoaded", function() {
-            displayLeaderboard();
-        });
-
-        // Function to reset the leaderboard
-        function resetLeaderboard() {
-            localStorage.removeItem('leaderboard');
-            displayLeaderboard();
-        }
-
-        // Event listener for reset button
-        document.getElementById("reset-leaderboard-btn").addEventListener("click", function() {
-            if (confirm("Are you sure you want to reset the leaderboard?")) {
-                resetLeaderboard();
-            }
-        });
-
-
-
-        // Initialize form
+        // Initialize random data on page load
         generateRandomData();
-        startTimer();
+
+        // Display leaderboard on page load
+        displayLeaderboard();
     </script>
 </body>
 </html>
