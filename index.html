@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Reporting Practice</title>
+    <style>
+        @import 'chicago.css';
+
+        @font-face {
+            font-family: 'ChicagoFLF';
+            src: url('ChicagoFLF.ttf') format('truetype');
+        }
+        body {
+            font-family: 'ChicagoFLF', sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #form-container {
+            margin: 20px auto;
+            width: 300px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, select, button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            cursor: pointer;
+        }
+        #random-data {
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        #timer {
+            font-size: 20px;
+        }
+        /* Collapsible Button Styles */
+        .collapsible {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            border: none;
+            text-align: center;
+            outline: none;
+            font-size: 18px;
+            width: 200px;
+            margin: 20px auto; /* Centering the button */
+            border-radius: 15px;
+            box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        .collapsible:hover {
+            background-color: #0056b3;
+        }
+
+        .collapsible-content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        #leaderboard-container {
+        margin-top: 20px;
+        text-align: center;
+        }
+        #leaderboard {
+            list-style-type: none;
+            padding: 0;
+        }
+        #leaderboard li {
+            padding: 5px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Weather Reporting Practice</h1>
+
+    <button class="collapsible">View Data</button>
+    <div class="collapsible-content">
+        <div id="random-data">
+            <p>Fill in the form with the following information:</p>
+            <p>Temperature: <span id="random-temp"></span> °F</p>
+            <p>Wind Speed: <span id="random-wind"></span> km/h</p>
+            <p>Weather Condition: <span id="random-condition"></span></p>
+            <p>Number of Hikers Assisted: <span id="random-hikers"></span></p>
+        </div>
+    </div>
+
+    <div id="timer">Time: <span id="time">0.0</span> seconds</div>
+
+    <div id="form-container">
+        <form id="weather-form">
+            <input type="number" id="temperature" placeholder="Temperature (xx.x°F)" step="0.1">
+            <input type="number" id="wind-speed" placeholder="Wind Speed (km/h)">
+            <select id="weather-condition">
+                <option value="cloud">Cloud</option>
+                <option value="mist">Mist</option>
+                <option value="clear">Clear</option>
+                <option value="wind">Wind</option>
+                <option value="rain">Rain</option>
+                <option value="heat waves">Heat Waves</option>
+                <option value="blizzard">Blizzard</option>
+                <option value="thunder">Thunder</option>
+            </select>
+            <input type="number" id="hikers-assisted" placeholder="Number of Hikers Assisted">
+            <button type="button" id="submit-btn">Submit</button>
+        </form>
+    </div>
+
+    <div id="result" style="display: none;">
+        <p>Your time: <span id="final-time"></span> seconds!</p>
+        <button id="retry-btn">Retry</button>
+    </div>
+
+    <div id="leaderboard-container">
+        <h2>Leaderboard</h2>
+        <ul id="leaderboard"></ul>
+    </div>
+    
+    <button id="reset-leaderboard-btn" style="position: fixed; bottom: 20px; right: 20px; padding: 10px 15px; background-color: grey; color: white; border: none; border-radius: 15px; cursor: pointer;">Reset Leaderboard</button>
+
+    <script>
+        // Random data generator
+        function generateRandomData() {
+            const temp = (Math.random() * 60 + 20).toFixed(1); // Random temp between 20-80°F
+            const wind = Math.floor(Math.random() * 50) + 1; // Random wind speed 1-50 km/h
+            const conditions = ["Cloud", "Mist", "Clear", "Wind", "Rain", "Heat Waves", "Blizzard", "Thunder"];
+            const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
+            const hikers = Math.floor(Math.random() * 10) + 1; // Random hikers between 1-10
+
+            document.getElementById("random-temp").textContent = temp;
+            document.getElementById("random-wind").textContent = wind;
+            document.getElementById("random-condition").textContent = randomCondition;
+            document.getElementById("random-hikers").textContent = hikers;
+        }
+
+        // Timer functionality
+        let startTime, timerInterval;
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(function() {
+                const timeElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById("time").textContent = timeElapsed;
+            }, 100);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById("final-time").textContent = finalTime;
+        }
+
+        // Check if the form input matches the random data
+        function checkFormInput() {
+            const temp = document.getElementById("temperature").value;
+            const wind = document.getElementById("wind-speed").value;
+            const condition = document.getElementById("weather-condition").value;
+            const hikers = document.getElementById("hikers-assisted").value;
+
+            const randomTemp = document.getElementById("random-temp").textContent;
+            const randomWind = document.getElementById("random-wind").textContent;
+            const randomCondition = document.getElementById("random-condition").textContent.toLowerCase();
+            const randomHikers = document.getElementById("random-hikers").textContent;
+
+            return temp === randomTemp && wind === randomWind && condition === randomCondition && hikers === randomHikers;
+        }
+
+        // Event listener for submit button
+        document.getElementById("submit-btn").addEventListener("click", function() {
+            // Check if input is correct
+            if (checkFormInput()) {
+                stopTimer();
+                document.getElementById("form-container").style.display = "none";
+                document.getElementById("result").style.display = "block";
+            } else {
+                alert("The input doesn't match the random data. Try again.");
+            }
+
+            // Reset the form fields regardless of correct or incorrect
+            document.getElementById("weather-form").reset();
+        });
+
+        // Event listener for retry button
+        document.getElementById("retry-btn").addEventListener("click", function() {
+            document.getElementById("form-container").style.display = "block";
+            document.getElementById("result").style.display = "none";
+            generateRandomData();
+            startTimer();
+        });
+
+        // Collapsible logic
+        const collapsible = document.querySelector(".collapsible");
+        const collapsibleContent = document.querySelector(".collapsible-content");
+
+        collapsible.addEventListener("click", function() {
+            this.classList.toggle("active");
+            const content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+
+        // Close collapsible when the form is focused
+        const formInputs = document.querySelectorAll("#weather-form input, #weather-form select");
+        formInputs.forEach(input => {
+            input.addEventListener("focus", () => {
+                collapsibleContent.style.display = "none"; // Close the collapsible when user clicks into the form
+            });
+        });
+
+        // Function to update the leaderboard
+        function updateLeaderboard(finalTime) {
+            const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+
+            // Add the new score to the leaderboard
+            leaderboard.push(parseFloat(finalTime));
+
+            // Sort the leaderboard and keep only the top 5 scores
+            leaderboard.sort((a, b) => a - b);
+            if (leaderboard.length > 5) {
+                leaderboard.pop();
+            }
+
+            // Store the updated leaderboard in localStorage
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+
+            // Display the updated leaderboard
+            displayLeaderboard();
+        }
+
+        // Function to display the leaderboard
+        function displayLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+            const leaderboardElement = document.getElementById('leaderboard');
+
+            // Clear the existing leaderboard entries
+            leaderboardElement.innerHTML = '';
+
+            // Add the new leaderboard entries
+            leaderboard.forEach((score, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `#${index + 1}: ${score.toFixed(1)} seconds`;
+                leaderboardElement.appendChild(listItem);
+            });
+        }
+
+        // Call this function when the user finishes the task successfully
+        function stopTimer() {
+            clearInterval(timerInterval);
+            const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById("final-time").textContent = finalTime;
+
+            // Update the leaderboard with the final time
+            updateLeaderboard(finalTime);
+        }
+
+        // Initialize the leaderboard when the page loads
+        document.addEventListener("DOMContentLoaded", function() {
+            displayLeaderboard();
+        });
+
+        // Function to reset the leaderboard
+        function resetLeaderboard() {
+            localStorage.removeItem('leaderboard');
+            displayLeaderboard();
+        }
+
+        // Event listener for reset button
+        document.getElementById("reset-leaderboard-btn").addEventListener("click", function() {
+            if (confirm("Are you sure you want to reset the leaderboard?")) {
+                resetLeaderboard();
+            }
+        });
+
+
+
+        // Initialize form
+        generateRandomData();
+        startTimer();
+    </script>
+</body>
+</html>
